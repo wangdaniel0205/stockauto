@@ -121,7 +121,7 @@ class Creon():
                             ret = self.cpOrder.BlockRequest()
                             printlog('최유리 IOC 매도', s['code'], s['name'], s['qty'], 
                                 '-> cpOrder.BlockRequest() -> returned', ret)
-                            printlog('거래 결과 ->',self.cpOrder.GetDibStatus(), self.cpOrder.GetDibMsg1())
+                            dbgout('거래 결과 ->'+ str(self.cpOrder.GetDibStatus()) + str(self.cpOrder.GetDibMsg1()))
                             if ret == 4:
                                 remain_time = self.cpStatus.LimitRequestRemainTime
                                 printlog('주의: 연속 주문 제한, 대기시간:', remain_time/1000)
@@ -153,7 +153,7 @@ class Creon():
                     ret = self.cpOrder.BlockRequest()
                     printlog('최유리 IOC 매도', code, name, qty, 
                         '-> cpOrder.BlockRequest() -> returned', ret)
-                    printlog('거래 결과 ->',self.cpOrder.GetDibStatus(), self.cpOrder.GetDibMsg1())
+                    dbgout('거래 결과 ->'+str(self.cpOrder.GetDibStatus()) + str(self.cpOrder.GetDibMsg1()))
                     if ret == 4:
                         remain_time = self.cpStatus.LimitRequestRemainTime
                         printlog('주의: 연속 주문 제한, 대기시간:', remain_time/1000)
@@ -175,9 +175,9 @@ class Creon():
         price, _, _ = self.get_current_price(code)
         cash = self.get_current_cash()
         
-        if ceiling > cash:
-            return ceiling // price
-        return cash // price
+        #if ceiling < cash:
+        #   return ceiling // price
+        return floor(cash*0.8) // price
         
 
 
@@ -223,7 +223,7 @@ class Creon():
             # 매수 주문 요청
             ret = self.cpOrder.BlockRequest() 
             printlog('시장가 기본 매수 ->', stock_name, code, buy_qty, '->', ret)
-            printlog('거래 결과 ->',self.cpOrder.GetDibStatus(), self.cpOrder.GetDibMsg1())
+            dbgout('거래 결과 ->'+str(self.cpOrder.GetDibStatus()) + str(self.cpOrder.GetDibMsg1()))
             if self.cpOrder.GetDibStatus() == -1:
                 #symbol_list.remove(code)
                 dbgout('거래 실패')
@@ -242,3 +242,11 @@ class Creon():
         except Exception as ex:
             dbgout("`buy("+ str(code) + ") -> exception! " + str(ex) + "`")
             return False
+
+if __name__ == '__main__':
+    Creon = Creon()
+    Creon.get_basic_info(printOption=True)
+    print(Creon.get_buy_qty('A003490', 0.4))
+    price, _, _ = Creon.get_current_price('A003490')
+    cash = Creon.get_current_cash()
+    print(cash, price, cash//price)

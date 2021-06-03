@@ -15,7 +15,7 @@ class ThreeRule():
     
     def set_up(self):
         
-        self.buy_percent = 0.4 # change appropriately 
+        self.buy_percent = 0.3 # change appropriately 
 
         # init classes 
         self.Creon = Creon()
@@ -37,10 +37,18 @@ class ThreeRule():
             df = self.DataUtil.query("{} {} {} D".format(code, past, today))
             self.DataUtil.add_moving_avg(df, 'high', 7)
             self.DataUtil.add_moving_avg(df, 'low', 7)
-            self.DataUtil.add_moving_avg(df, 'close', 200)
+            if type(self.DataUtil.add_moving_avg(df, 'close', 200)) == type(None):
+                printlog('{} cannot add 200 close moving average'.format(code))
+                
+                symbol_list.remove(code)
+                continue
+
             s = df.iloc[-1]
             info = {'ma_high7': floor(s['ma_high7']), 'ma_low7': floor(s['ma_low7']), 'ma_close200': floor(s['ma_close200'])}
             self.stock_list.append(Stock(code, info, code in bought_list))
+
+        self.Creon.get_basic_info(printOption=True)
+        self.Creon.get_stock_balance('ALL',printOption=True)
         return True 
 
     def run(self):
@@ -53,18 +61,25 @@ class ThreeRule():
             if stock.isBought == False: # if stock is not bought
                 signal = self.check_buy_signal(current_price, stock.info) # check buy signal
                 if signal: # if signal
+                    dbgout("'{}' buy_signal: current({}) < ma_low7({}) AND current({}) > ma_close200({}) => {}".format(self.DataUtil.code_to_name(stock.code), current_price, stock.info['ma_low7'], current_price, stock.info['ma_close200'], signal))
                     # buy stock
-                    if self.Creon.buy(stock.code, Creon.get_buy_qty(stock.code, self.buy_percent)): # if successfully bought
+                    if self.Creon.buy(stock.code, self.Creon.get_buy_qty(stock.code, self.buy_percent)): # if successfully bought
                         stock.isBought = True
+                    else:
+                        for i, target in enumerate(self.stock_list):
+                            if target.code == stock.code:
+                                self.stock_list.pop(i)
                         
                 printlog("'{}' buy_signal: current({}) < ma_low7({}) AND current({}) > ma_close200({}) => {}".format(self.DataUtil.code_to_name(stock.code), current_price, stock.info['ma_low7'], current_price, stock.info['ma_close200'], signal))
 
             else: # if stock is already bought
                 signal = self.check_sell_signal(current_price, stock.info)
                 if signal: # check sell signal
+                    dbgout("'{}' sell_signal: current({}) > ma_high7({}) => {}".format(self.DataUtil.code_to_name(stock.code), current_price, stock.info['ma_high7'], signal))
                     # sell
                     if self.Creon.sell(stock.code): # if successfully sold
                         stock.isBought = False 
+
                 printlog("'{}' sell_signal: current({}) > ma_high7({}) => {}".format(self.DataUtil.code_to_name(stock.code), current_price, stock.info['ma_high7'], signal))
 
         return True

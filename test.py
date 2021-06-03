@@ -1,5 +1,4 @@
-from datetime import datetime, timedelta
+import pandas as pd
+df = pd.DataFrame()
 
-x = datetime.today() - timedelta(days=200)
-
-print(x.strftime("%Y%m%d"))
+print(type(df) == type(None))
