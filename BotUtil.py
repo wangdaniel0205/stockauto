@@ -9,7 +9,7 @@ def bot_post(text):
         headers={"Authorization": "Bearer "+myToken},
         data={"channel": "#stock","text": text}
     )
-    print(response)
+    #print(response)
 
 def printlog(message, *args):
     """print to current cmd"""

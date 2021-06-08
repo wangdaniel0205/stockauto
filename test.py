@@ -1,4 +1,4 @@
-import pandas as pd
-df = pd.DataFrame()
+from CreonUtil import Creon
 
-print(type(df) == type(None))
+c = Creon()
+c.get_basic_info(printOption=True)

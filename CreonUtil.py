@@ -170,9 +170,8 @@ class Creon():
         total_asset = int(info[3])
         return floor(total_asset * buy_percent)
 
-    def get_buy_qty(self, code, buy_percent):
+    def get_buy_qty(self, code, buy_percent, price):
         ceiling = self.get_buy_ceiling(buy_percent)
-        price, _, _ = self.get_current_price(code)
         cash = self.get_current_cash()
         
         #if ceiling < cash:
@@ -199,7 +198,7 @@ class Creon():
         item['cur_price'] = self.cpStock.GetHeaderValue(11)   # 현재가
         item['ask'] =  self.cpStock.GetHeaderValue(16)        # 매수호가
         item['bid'] =  self.cpStock.GetHeaderValue(17)        # 매도호가    
-        return item['cur_price'], item['ask'], item['bid']
+        return item['cur_price']
 
 
     def buy(self, code, buy_qty):
@@ -245,8 +244,4 @@ class Creon():
 
 if __name__ == '__main__':
     Creon = Creon()
-    Creon.get_basic_info(printOption=True)
-    print(Creon.get_buy_qty('A003490', 0.4))
-    price, _, _ = Creon.get_current_price('A003490')
-    cash = Creon.get_current_cash()
-    print(cash, price, cash//price)
+    Creon.sell('A298000')

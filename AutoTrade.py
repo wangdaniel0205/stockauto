@@ -8,9 +8,19 @@ from dontshare.AutoConnect import connect
 if __name__ == '__main__': 
 
     today = datetime.today().weekday()
+    t_now = datetime.now()
+    t_9 = t_now.replace(hour=9, minute=0, second=0, microsecond=0)
+    t_start = t_now.replace(hour=9, minute=5, second=0, microsecond=0)
+    t_exit = t_now.replace(hour=15, minute=20, second=0,microsecond=0)
+
     if today >= 5:
         printlog('Today is', 'Saturday.' if today == 5 else 'Sunday.')
         sys.exit(0)
+
+    if t_now > t_exit or t_now < t_start: 
+            dbgout('Trade `self-destructed!`')
+            sys.exit(0)
+
 
     connect()
     AutoAlgo = ThreeRule()
@@ -20,10 +30,8 @@ if __name__ == '__main__':
     print('all set')
 
 
-    t_now = datetime.now()
-    t_9 = t_now.replace(hour=9, minute=0, second=0, microsecond=0)
-    t_start = t_now.replace(hour=9, minute=5, second=0, microsecond=0)
-    t_exit = t_now.replace(hour=15, minute=20, second=0,microsecond=0)
+
+    
 
     while True:
         t_now = datetime.now()
@@ -36,7 +44,8 @@ if __name__ == '__main__':
                 sys.exit(0)
             
         elif t_now > t_exit :  # PM 03:20 ~ :프로그램 종료
+            AutoAlgo.terminate()
             dbgout('Trade `self-destructed!`')
             sys.exit(0)
 
-        time.sleep(30) 
+        time.sleep(20) 

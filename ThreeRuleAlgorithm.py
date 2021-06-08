@@ -1,8 +1,10 @@
 from BotUtil import dbgout, printlog, write_daily_result
 from CreonUtil import Creon
 from DataUtil import DataUtil
+from RecordUtil import RecordUtil
 from datetime import datetime, timedelta
 from math import floor
+from time import sleep
 
 class Stock():
     def __init__(self, code, info, isBought):
@@ -49,6 +51,9 @@ class ThreeRule():
 
         self.Creon.get_basic_info(printOption=True)
         self.Creon.get_stock_balance('ALL',printOption=True)
+
+        self.RecordUtil = RecordUtil()
+
         return True 
 
     def run(self):
@@ -56,21 +61,28 @@ class ThreeRule():
         if self.Creon.check_creon_system() == False:
             return False
 
+        median_stock_code = self.stock_list[len(self.stock_list)//2].code
         for stock in self.stock_list:
-            current_price, _, _ = self.Creon.get_current_price(stock.code)
+            if stock.code == median_stock_code:
+                sleep(20)
+            current_price = self.Creon.get_current_price(stock.code)
+            while current_price == False:
+                current_price = self.Creon.get_current_price(stock.code)
             if stock.isBought == False: # if stock is not bought
                 signal = self.check_buy_signal(current_price, stock.info) # check buy signal
                 if signal: # if signal
                     dbgout("'{}' buy_signal: current({}) < ma_low7({}) AND current({}) > ma_close200({}) => {}".format(self.DataUtil.code_to_name(stock.code), current_price, stock.info['ma_low7'], current_price, stock.info['ma_close200'], signal))
                     # buy stock
-                    if self.Creon.buy(stock.code, self.Creon.get_buy_qty(stock.code, self.buy_percent)): # if successfully bought
+                    qty = self.Creon.get_buy_qty(stock.code, self.buy_percent, current_price)
+                    if qty > 0 and self.Creon.buy(stock.code, qty): # if successfully bought
                         stock.isBought = True
-                    else:
-                        for i, target in enumerate(self.stock_list):
-                            if target.code == stock.code:
-                                self.stock_list.pop(i)
+                        self.RecordUtil.record_update(code=stock.code, status='b', amount=qty, price=current_price)
+                    #else:
+                    #    for i, target in enumerate(self.stock_list):
+                    #        if target.code == stock.code:
+                    #            self.stock_list.pop(i)
                         
-                printlog("'{}' buy_signal: current({}) < ma_low7({}) AND current({}) > ma_close200({}) => {}".format(self.DataUtil.code_to_name(stock.code), current_price, stock.info['ma_low7'], current_price, stock.info['ma_close200'], signal))
+                #printlog("'{}' buy_signal: current({}) < ma_low7({}) AND current({}) > ma_close200({}) => {}".format(self.DataUtil.code_to_name(stock.code), current_price, stock.info['ma_low7'], current_price, stock.info['ma_close200'], signal))
 
             else: # if stock is already bought
                 signal = self.check_sell_signal(current_price, stock.info)
@@ -78,7 +90,9 @@ class ThreeRule():
                     dbgout("'{}' sell_signal: current({}) > ma_high7({}) => {}".format(self.DataUtil.code_to_name(stock.code), current_price, stock.info['ma_high7'], signal))
                     # sell
                     if self.Creon.sell(stock.code): # if successfully sold
+                        self.RecordUtil.record_update(code=stock.code, status='s', amount='x', price=current_price)
                         stock.isBought = False 
+
 
                 printlog("'{}' sell_signal: current({}) > ma_high7({}) => {}".format(self.DataUtil.code_to_name(stock.code), current_price, stock.info['ma_high7'], signal))
 
@@ -96,6 +110,10 @@ class ThreeRule():
             return True
         return False
 
+    def terminate(self):
+        balance = int(self.Creon.get_basic_info(printOption=False)[3])
+        print(balance)
+        self.RecordUtil.record_finalize(balance=balance)
 
 
 
@@ -104,4 +122,4 @@ if __name__ == '__main__':
 
     algo = ThreeRule()
     algo.set_up()
-    algo.run()
+    algo.terminate()

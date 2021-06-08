@@ -4,8 +4,10 @@ import pandas as pd
 import re
 import os, sys, ctypes
 from BotUtil import dbgout, printlog, write_daily_result
+import matplotlib.pyplot as plt
 
-class DataUtil:
+
+class DataUtil():
     def __init__(self):
         self.obj_CpCodeMgr = win32com.client.Dispatch('CpUtil.CpCodeMgr')
         self.obj_CpCybos = win32com.client.Dispatch('CpUtil.CpCybos')
@@ -70,7 +72,7 @@ class DataUtil:
         list_field_name = ['date', 'time', 'open', 'high', 'low', 'close', 'volume']
         dict_chart = {name: [] for name in list_field_name}
 
-        # if req_type has T, add int to ushort
+        # if req_type has m, add int to ushort
         ushort = None
         if type(re.search("m",req_type)) != type(None):
             ushort = int(re.search(r'\d+', req_type).group()) 
@@ -112,14 +114,17 @@ class DataUtil:
 
 if __name__ == '__main__':
     DataUtil = DataUtil()
+    '''
     target_stocks = [
-        'A051910 20201010 20201229 D'
+        'A298000 20210525 20210607 5m'
     ]
 
+    
     for item in target_stocks:
         df = DataUtil.query(item)
-        if type(df) == None:
-            quit()
-        DataUtil.add_moving_avg(df, 'close', '5')
-        DataUtil.add_moving_avg(df, 'open', '10')
-        DataUtil.to_csv(df, item)
+        
+        DataUtil.to_csv(df=df, inputs=item)
+    '''
+    df = DataUtil.from_csv('readonly/효성화학_20210525_20210607_5m.csv')
+    plt.plot(df['close'])
+    plt.show()
