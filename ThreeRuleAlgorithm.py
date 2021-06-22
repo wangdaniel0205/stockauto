@@ -17,7 +17,7 @@ class ThreeRule():
     
     def set_up(self):
         
-        self.buy_percent = 0.3 # change appropriately 
+        self.buy_percent = 0.15 # change appropriately 
 
         # init classes 
         self.Creon = Creon()

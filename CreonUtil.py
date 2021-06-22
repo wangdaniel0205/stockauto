@@ -244,4 +244,4 @@ class Creon():
 
 if __name__ == '__main__':
     Creon = Creon()
-    Creon.sell('A298000')
+    Creon.get_basic_info(printOption=True)

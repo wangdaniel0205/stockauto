@@ -17,9 +17,6 @@ if __name__ == '__main__':
         printlog('Today is', 'Saturday.' if today == 5 else 'Sunday.')
         sys.exit(0)
 
-    if t_now > t_exit or t_now < t_start: 
-            dbgout('Trade `self-destructed!`')
-            sys.exit(0)
 
 
     connect()
