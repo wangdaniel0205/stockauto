@@ -111,8 +111,7 @@ class ThreeRule():
         return False
 
     def terminate(self):
-        balance = int(self.Creon.get_basic_info(printOption=False)[3])
-        print(balance)
+        balance = self.Creon.get_balance
         self.RecordUtil.record_finalize(balance=balance)
 
 

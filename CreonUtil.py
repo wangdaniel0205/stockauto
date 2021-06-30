@@ -63,6 +63,10 @@ class Creon():
             dbgout('종목수: ' + res[5])
         return res
 
+    def get_balance(self):
+        info = self.get_basic_info(printOption=False)
+        return int(info[3]) - int(info[4])
+
     def get_stock_balance(self, code, printOption=False):
         # use sample: stock_name, stock_qty = get_stock_balance(code)  # 종목명과 보유수량 조회
         """인자로 받은 종목의 종목명과 수량을 반환한다."""
@@ -174,8 +178,8 @@ class Creon():
         ceiling = self.get_buy_ceiling(buy_percent)
         cash = self.get_current_cash()
         
-        #if ceiling < cash:
-        #   return ceiling // price
+        if ceiling < cash:
+           return ceiling // price
         return floor(cash*0.8) // price
         
 
@@ -244,4 +248,5 @@ class Creon():
 
 if __name__ == '__main__':
     Creon = Creon()
-    Creon.get_basic_info(printOption=True)
+    print(Creon.get_revenue())
+

@@ -66,7 +66,7 @@ class RecordUtil():
         self.df.loc[i,'balance'] = balance
         self.update_profit()
         self.save_record()
-
+    
     def save_record(self):
         self.df.to_csv(self.fileName,index=False)
 
