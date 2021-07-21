@@ -248,5 +248,4 @@ class Creon():
 
 if __name__ == '__main__':
     Creon = Creon()
-    print(Creon.get_revenue())
-
+    Creon.sell('ALL')

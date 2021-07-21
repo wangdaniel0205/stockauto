@@ -1,0 +1,19 @@
+the candle height: the longer the candle the stronger the trend 
+
+to make:
+100 period moving average (consider from 20 - 100 period)
+
+if cur_price > 100MA: consider it is uptrend and look for buy signals
+else: consider ti is downtrend and look for sell signals
+
+buy_signal: two heikin ashi candles with no wicks on the downside (two contious green), catch the one right after the pullback
+
+	1. set buy order above the upper wick of the second candle
+	2. set stop loss below the first candle
+	3. set targets at the nearest resistance (or one risk reward ratio)
+
+
+sell_signal: two heikin ashi candles with no wicks on the upside (two contious red), catch the one right after the pullback
+
+	1. keep the stop loss above the high of the first candle
+	2. exit at the near resistance (or one risk reward ratio)

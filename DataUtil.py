@@ -1,6 +1,7 @@
 import time
 import win32com.client
 import pandas as pd
+import numpy as np
 import re
 import os, sys, ctypes
 from BotUtil import dbgout, printlog, write_daily_result
@@ -52,6 +53,20 @@ class DataUtil():
             return None
         col_name = 'ma_'+str(col)+str(unit)
         df[col_name] = df[col].rolling(int(unit)).mean()
+        return df
+
+    def add_true_ratio(self, df): 
+        df['tr'] = df.apply(lambda x: max([
+                        x['high']-x['low'],
+                        abs(x['high']-x['close']),
+                        abs(x['low']-x['close'])
+                        ]), axis=1)
+        return df
+
+    def add_average_true_ratio(self, df, unit):
+        if not('tr' in df.columns):
+            self.add_true_ratio(df)
+        df['atr'] = df['tr'].rolling(int(unit)).mean()
         return df
 
     def query(self, inputs):
@@ -110,6 +125,7 @@ class DataUtil():
         #print("차트: {} {}".format(cnt, dict_chart))
         df = pd.DataFrame(dict_chart, columns=list_field_name)
         df = df.iloc[::-1] # reverse rows
+        df = df.reset_index(drop=True)
         return df
 
 if __name__ == '__main__':
@@ -125,6 +141,6 @@ if __name__ == '__main__':
         
         DataUtil.to_csv(df=df, inputs=item)
     '''
-    df = DataUtil.from_csv('readonly/효성화학_20210525_20210607_5m.csv')
+    df = DataUtil.from_csv('readonly/효성화학_20210719_20210720_5m.csv')
     plt.plot(df['close'])
     plt.show()

@@ -36,13 +36,15 @@ if __name__ == '__main__':
         if t_now < t_start:
             time.sleep(30)
 
-        elif t_start < t_now < t_exit :  # AM 09:05 ~ PM 03:20 : RUN
-            if AutoAlgo.run() == False:
-                sys.exit(0)
+
             
         elif t_now > t_exit :  # PM 03:20 ~ :프로그램 종료
             AutoAlgo.terminate()
             dbgout('Trade `self-destructed!`')
             sys.exit(0)
+
+        else:
+            if AutoAlgo.run() == False:
+                sys.exit(0)
 
         time.sleep(20) 

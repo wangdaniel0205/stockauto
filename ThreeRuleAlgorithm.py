@@ -12,7 +12,6 @@ class Stock():
         self.info = info
         self.isBought = isBought
 
-
 class ThreeRule():
     
     def set_up(self):
@@ -31,23 +30,28 @@ class ThreeRule():
         bought_list = [item['code'] for item in self.Creon.get_stock_balance('ALL')]
         self.stock_list = []
 
-        # for each stock, read moving averages of: ma_low7, ma_high7, ma_close200 
+        # for each stock, read moving averages of: ma_low7, ma_high7, ma_close150
         today = (datetime.today() - timedelta(days=1)).strftime("%Y%m%d")
-        past = (datetime.today() - timedelta(days=300)).strftime("%Y%m%d")
+        past = (datetime.today() - timedelta(days=250)).strftime("%Y%m%d")
         
         for code in symbol_list:
             df = self.DataUtil.query("{} {} {} D".format(code, past, today))
-            self.DataUtil.add_moving_avg(df, 'high', 7)
-            self.DataUtil.add_moving_avg(df, 'low', 7)
-            if type(self.DataUtil.add_moving_avg(df, 'close', 200)) == type(None):
-                printlog('{} cannot add 200 close moving average'.format(code))
-                
+            if df.shape[0] < 150: 
+                printlog('{} cannot add 150 close moving average'.format(code))
                 symbol_list.remove(code)
                 continue
 
+            self.DataUtil.add_moving_avg(df, 'high', 7)
+            self.DataUtil.add_moving_avg(df, 'low', 7)
+            self.DataUtil.add_moving_avg(df, 'close', 150)
+
+            self.DataUtil.add_average_true_ratio(df, 20)
+
             s = df.iloc[-1]
-            info = {'ma_high7': floor(s['ma_high7']), 'ma_low7': floor(s['ma_low7']), 'ma_close200': floor(s['ma_close200'])}
+            info = {'ma_high7': floor(s['ma_high7']), 'ma_low7': floor(s['ma_low7']), 'ma_close150': floor(s['ma_close150']), 'atr': floor(s['atr'])}
             self.stock_list.append(Stock(code, info, code in bought_list))
+
+
 
         self.Creon.get_basic_info(printOption=True)
         self.Creon.get_stock_balance('ALL',printOption=True)
@@ -71,23 +75,25 @@ class ThreeRule():
             if stock.isBought == False: # if stock is not bought
                 signal = self.check_buy_signal(current_price, stock.info) # check buy signal
                 if signal: # if signal
-                    dbgout("'{}' buy_signal: current({}) < ma_low7({}) AND current({}) > ma_close200({}) => {}".format(self.DataUtil.code_to_name(stock.code), current_price, stock.info['ma_low7'], current_price, stock.info['ma_close200'], signal))
+                    #dbgout("'{}' buy_signal: current({}) < ma_low7({}) AND current({}) > ma_close150({}) => {}".format(self.DataUtil.code_to_name(stock.code), current_price, stock.info['ma_low7'], current_price, stock.info['ma_close150'], signal))
                     # buy stock
                     qty = self.Creon.get_buy_qty(stock.code, self.buy_percent, current_price)
-                    if qty > 0 and self.Creon.buy(stock.code, qty): # if successfully bought
-                        stock.isBought = True
-                        self.RecordUtil.record_update(code=stock.code, status='b', amount=qty, price=current_price)
-                    #else:
-                    #    for i, target in enumerate(self.stock_list):
-                    #        if target.code == stock.code:
-                    #            self.stock_list.pop(i)
+                    if qty > 0: 
+                        if self.Creon.buy(stock.code, qty): # if successfully bought
+                            stock.isBought = True
+                            self.RecordUtil.update_stop_loss(stock.code, current_price-2*stock.info['atr'])
+                            self.RecordUtil.record_update(code=stock.code, status='b', amount=qty, price=current_price)
+                        else: # cannot buy due to unknown reason, remove from list
+                            for i, target in enumerate(self.stock_list):
+                                if target.code == stock.code:
+                                    self.stock_list.pop(i)
                         
-                #printlog("'{}' buy_signal: current({}) < ma_low7({}) AND current({}) > ma_close200({}) => {}".format(self.DataUtil.code_to_name(stock.code), current_price, stock.info['ma_low7'], current_price, stock.info['ma_close200'], signal))
+                printlog("'{}' buy_signal: current({}) < ma_low7({}) AND current({}) > ma_close150({}) => {}".format(self.DataUtil.code_to_name(stock.code), current_price, stock.info['ma_low7'], current_price, stock.info['ma_close150'], signal))
 
             else: # if stock is already bought
-                signal = self.check_sell_signal(current_price, stock.info)
+                signal = self.check_sell_signal(current_price, stock.info, stock.code)
                 if signal: # check sell signal
-                    dbgout("'{}' sell_signal: current({}) > ma_high7({}) => {}".format(self.DataUtil.code_to_name(stock.code), current_price, stock.info['ma_high7'], signal))
+                    #dbgout("'{}' sell_signal: current({}) > ma_high7({}) => {}".format(self.DataUtil.code_to_name(stock.code), current_price, stock.info['ma_high7'], signal))
                     # sell
                     if self.Creon.sell(stock.code): # if successfully sold
                         self.RecordUtil.record_update(code=stock.code, status='s', amount='x', price=current_price)
@@ -100,18 +106,19 @@ class ThreeRule():
 
     def check_buy_signal(self, current_price, data):
         '''Return True if buy singal is on, otherwise False'''
-        if current_price < data['ma_low7'] and current_price > data['ma_close200']:
+        return False
+        if current_price < data['ma_low7'] and current_price > data['ma_close150']:
             return True
         return False
 
-    def check_sell_signal(self, current_price, data):
+    def check_sell_signal(self, current_price, data, code):
         '''Return True if sell singal is on, otherwise False'''
-        if current_price > data['ma_high7']:
+        if current_price > data['ma_high7'] or current_price < self.RecordUtil.get_stop_loss(code):
             return True
         return False
 
     def terminate(self):
-        balance = self.Creon.get_balance
+        balance = self.Creon.get_balance()
         self.RecordUtil.record_finalize(balance=balance)
 
 
@@ -121,4 +128,4 @@ if __name__ == '__main__':
 
     algo = ThreeRule()
     algo.set_up()
-    algo.terminate()
+    

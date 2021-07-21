@@ -21,6 +21,7 @@ class RecordUtil():
         self.fileName = 'Record.csv'
         self.dataUtil = DataUtil()
         self.df = pd.read_csv(self.fileName)
+        self.stop_loss = pd.read_csv('Stop_loss.csv')
         self.date = datetime.today().strftime("%Y-%m-%d")
         
         stocks = self.dataUtil.read_stock_list() 
@@ -34,7 +35,9 @@ class RecordUtil():
         if len(diff) > 0:
             for new_stock in diff:
                 self.df[new_stock] = ""
+                self.stop_loss[new_stock] = -1
             self.save_record()
+            self.save_record(1)
 
     def record_update(self, code, status, amount, price):
         i = self.df[self.df['date'] == self.date].index.values[0]
@@ -67,14 +70,21 @@ class RecordUtil():
         self.update_profit()
         self.save_record()
     
-    def save_record(self):
-        self.df.to_csv(self.fileName,index=False)
+    def save_record(self, target=0):
+        if target == 0:
+            self.df.to_csv(self.fileName,index=False)
+            return
+        elif target == 1:
+            self.stop_loss.to_csv('Stop_loss.csv')
 
+    def get_stop_loss(self, code):
+        return self.stop_loss.loc[0, code]
+
+    def update_stop_loss(self, code, val):
+        self.stop_loss.at[0, code] = val
+        self.save_record(1)
 
 
 
 if __name__ == '__main__':
-    
     record = RecordUtil()
-    
-    #record.record_update(code='A005380', status='s', amount=3, price=100)
