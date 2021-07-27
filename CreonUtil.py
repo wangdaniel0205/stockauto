@@ -171,13 +171,14 @@ class Creon():
 
     def get_buy_ceiling(self, buy_percent):
         info = self.get_basic_info(printOption=False)
-        total_asset = int(info[3])
+        total_asset = int(info[1]) + int(info[4])
         return floor(total_asset * buy_percent)
 
     def get_buy_qty(self, code, buy_percent, price):
         ceiling = self.get_buy_ceiling(buy_percent)
         cash = self.get_current_cash()
         
+        print(ceiling//price)
         if ceiling < cash:
            return ceiling // price
         return floor(cash*0.8) // price

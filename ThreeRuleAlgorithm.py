@@ -30,25 +30,25 @@ class ThreeRule():
         bought_list = [item['code'] for item in self.Creon.get_stock_balance('ALL')]
         self.stock_list = []
 
-        # for each stock, read moving averages of: ma_low7, ma_high7, ma_close150
+        # for each stock, read moving averages of: ma_low7, ma_high7, ma_close100
         today = (datetime.today() - timedelta(days=1)).strftime("%Y%m%d")
         past = (datetime.today() - timedelta(days=250)).strftime("%Y%m%d")
         
         for code in symbol_list:
             df = self.DataUtil.query("{} {} {} D".format(code, past, today))
-            if df.shape[0] < 150: 
-                printlog('{} cannot add 150 close moving average'.format(code))
+            if df.shape[0] < 100: 
+                printlog('{} cannot add 100 close moving average'.format(code))
                 symbol_list.remove(code)
                 continue
 
             self.DataUtil.add_moving_avg(df, 'high', 7)
             self.DataUtil.add_moving_avg(df, 'low', 7)
-            self.DataUtil.add_moving_avg(df, 'close', 150)
+            self.DataUtil.add_moving_avg(df, 'close', 100)
 
             self.DataUtil.add_average_true_ratio(df, 20)
 
             s = df.iloc[-1]
-            info = {'ma_high7': floor(s['ma_high7']), 'ma_low7': floor(s['ma_low7']), 'ma_close150': floor(s['ma_close150']), 'atr': floor(s['atr'])}
+            info = {'ma_high7': floor(s['ma_high7']), 'ma_low7': floor(s['ma_low7']), 'ma_close100': floor(s['ma_close100']), 'atr': floor(s['atr'])}
             self.stock_list.append(Stock(code, info, code in bought_list))
 
 
@@ -75,7 +75,7 @@ class ThreeRule():
             if stock.isBought == False: # if stock is not bought
                 signal = self.check_buy_signal(current_price, stock.info) # check buy signal
                 if signal: # if signal
-                    #dbgout("'{}' buy_signal: current({}) < ma_low7({}) AND current({}) > ma_close150({}) => {}".format(self.DataUtil.code_to_name(stock.code), current_price, stock.info['ma_low7'], current_price, stock.info['ma_close150'], signal))
+                    #dbgout("'{}' buy_signal: current({}) < ma_low7({}) AND current({}) > ma_close100({}) => {}".format(self.DataUtil.code_to_name(stock.code), current_price, stock.info['ma_low7'], current_price, stock.info['ma_close100'], signal))
                     # buy stock
                     qty = self.Creon.get_buy_qty(stock.code, self.buy_percent, current_price)
                     if qty > 0: 
@@ -88,10 +88,11 @@ class ThreeRule():
                                 if target.code == stock.code:
                                     self.stock_list.pop(i)
                         
-                printlog("'{}' buy_signal: current({}) < ma_low7({}) AND current({}) > ma_close150({}) => {}".format(self.DataUtil.code_to_name(stock.code), current_price, stock.info['ma_low7'], current_price, stock.info['ma_close150'], signal))
+                printlog("'{}' buy_signal: current({}) < ma_low7({}) AND current({}) > ma_close100({}) => {}".format(self.DataUtil.code_to_name(stock.code), current_price, stock.info['ma_low7'], current_price, stock.info['ma_close100'], signal))
 
             else: # if stock is already bought
-                signal = self.check_sell_signal(current_price, stock.info, stock.code)
+                loss = self.RecordUtil.get_stop_loss(stock.code)
+                signal = self.check_sell_signal(current_price, stock.info, stock.code, loss)
                 if signal: # check sell signal
                     #dbgout("'{}' sell_signal: current({}) > ma_high7({}) => {}".format(self.DataUtil.code_to_name(stock.code), current_price, stock.info['ma_high7'], signal))
                     # sell
@@ -100,20 +101,20 @@ class ThreeRule():
                         stock.isBought = False 
 
 
-                printlog("'{}' sell_signal: current({}) > ma_high7({}) => {}".format(self.DataUtil.code_to_name(stock.code), current_price, stock.info['ma_high7'], signal))
+                printlog("'{}' sell_signal: current({}) > ma_high7({}) OR current({}) < stop_loss({}) => {}".format(self.DataUtil.code_to_name(stock.code), current_price, stock.info['ma_high7'], current_price, loss, signal))
 
         return True
 
     def check_buy_signal(self, current_price, data):
         '''Return True if buy singal is on, otherwise False'''
-        return False
-        if current_price < data['ma_low7'] and current_price > data['ma_close150']:
+        #return False
+        if current_price < data['ma_low7'] and current_price > data['ma_close100']:
             return True
         return False
 
-    def check_sell_signal(self, current_price, data, code):
+    def check_sell_signal(self, current_price, data, code, loss):
         '''Return True if sell singal is on, otherwise False'''
-        if current_price > data['ma_high7'] or current_price < self.RecordUtil.get_stop_loss(code):
+        if current_price > data['ma_high7'] or current_price < loss:
             return True
         return False
 
